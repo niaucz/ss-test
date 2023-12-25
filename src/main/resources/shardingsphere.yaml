@@ -1,0 +1,54 @@
+databaseName: test
+
+mode:
+  type: Standalone
+
+dataSources:
+  write_ds:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    maxLifetime: 120000
+    maximumPoolSize: 20
+  read_ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    readOnly: true
+    maxLifetime: 120000
+    maximumPoolSize: 20
+rules:
+  - !READWRITE_SPLITTING
+    dataSources:
+      readwrite_ds:
+        writeDataSourceName: write_ds
+        readDataSourceNames:
+          - read_ds_0
+        transactionalReadQueryStrategy: PRIMARY
+        loadBalancerName: random
+    loadBalancers:
+      random:
+        type: RANDOM
+  - !SHARDING
+    autoTables:
+      nx_data:
+        actualDataSources: readwrite_ds
+        shardingStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: hash-mod-module-algorithm
+    shardingAlgorithms:
+      hash-mod-module-algorithm:
+        type: HASH_MOD
+        props:
+          sharding-count: 8
+  - !SINGLE
+    tables:
+      - "*.*"
+    defaultDataSource: readwrite_ds
+props:
+  sql-show: true
